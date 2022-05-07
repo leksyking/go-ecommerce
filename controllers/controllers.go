@@ -44,6 +44,7 @@ func Signup() gin.HandlerFunc {
 		}
 		if count > 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "A user with the email aleady exists."})
+			return
 		}
 		count, err = UserCollection.CountDocuments(ctx, bson.M{"phone": user.Phone})
 		defer cancel()
@@ -64,7 +65,7 @@ func Signup() gin.HandlerFunc {
 		user.ID = primitive.NewObjectID()
 		user.User_ID = user.ID.Hex()
 
-		token, refreshToken := generate.TokenGenerator(*user.Email, *user.First_Name, *user.Last_Name, *&user.User_ID)
+		token, refreshToken := generate.TokenGenerator(*user.Email, *user.First_Name, *user.Last_Name, user.User_ID)
 		user.Token = &token
 		user.Refresh_Token = &refreshToken
 		user.UserCart = make([]models.ProductUser, 0)
