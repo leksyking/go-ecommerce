@@ -2,6 +2,7 @@ package contollers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -39,21 +40,35 @@ func AddAddress() gin.HandlerFunc {
 
 		match_filter := bson.D{{Key: "$match", Value: bson.D{primitive.E{Key: "_id", Value: address}}}}
 		unwind := bson.D{{Key: "$unwind", Value: bson.D{primitive.E{Key: "path", Value: "$address"}}}}
-		grouping := bson.D{{Key: "$group", Value: {primitive.E{Key: "_id", Value: "$_id"}, {Key: "count", Value: bson.D{primitive.E{Key: "$sum", Value: 1}}}}}}
+		grouping := bson.D{{Key: "$group", Value: bson.D{primitive.E{Key: "_id", Value: "$_id"}, {Key: "count", Value: bson.D{primitive.E{Key: "$sum", Value: 1}}}}}}
 		pointcursor, err := UserCollection.Aggregate(ctx, mongo.Pipeline{match_filter, unwind, grouping})
 		if err != nil {
 			c.IndentedJSON(500, "Internal Server Error")
 		}
-		var listing []bson.M
-		if err := pointcursor.All(ctx, &listing); err != nil {
-			c.AbortWithStatus(http.StatusInternalServerError)
+		var addressinfo []bson.M
+		if err := pointcursor.All(ctx, &addressinfo); err != nil {
+			panic(err)
 		}
-		for _, json := range listing {
-			c.IndentedJSON(200, json["count"])
+		var size int32
+		for _, address_no := range addressinfo {
+			count := address_no["count"]
+			size = count.(int32)
+		}
+		if size < 2 {
+			filter := bson.D{primitive.E{Key: "_id", Value: address}}
+			update := bson.D{{Key: "$push", Value: bson.D{primitive.E{Key: "address", Value: addresses}}}}
+			_, err := UserCollection.UpdateOne(ctx, filter, update)
+			if err != nil {
+				fmt.Println(err)
+			}
+		} else {
+			c.IndentedJSON(400, "Not allowed")
 		}
 		defer cancel()
+		ctx.Done()
 	}
 }
+
 func EditHomeAddress() gin.HandlerFunc {
 
 }
