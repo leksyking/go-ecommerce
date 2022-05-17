@@ -7,15 +7,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/leksyking/go-ecommerce/database"
 	"github.com/leksyking/go-ecommerce/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-)
-
-var (
-	UserCollection *mongo.Collection = database.UserData(database.Client, "Users")
 )
 
 func AddAddress() gin.HandlerFunc {
@@ -108,7 +103,39 @@ func EditHomeAddress() gin.HandlerFunc {
 }
 
 func EditWorkAddress() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user_id := c.Query("id")
+		if user_id == "" {
+			c.Header("Content-Type", "application/json")
+			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid"})
+			c.Abort()
+			return
+		}
+		usert_id, err := primitive.ObjectIDFromHex(user_id)
+		if err != nil {
+			c.IndentedJSON(500, "Internal server error")
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
+		var editWorkAddress models.Address
+		if err := c.BindJSON(&editWorkAddress); err != nil {
+			c.IndentedJSON(500, err.Error())
+			return
+		}
+		filter := bson.D{primitive.E{Key: "_id", Value: usert_id}}
+		update := bson.D{{Key: "$set", Value: bson.D{primitive.E{Key: "address.1.house_name", Value: editWorkAddress.House},
+			{Key: "address.1.street_name", Value: editWorkAddress.Street}, {Key: "address.1.city_name", Value: editWorkAddress.City},
+			{Key: "address.1.pin_code", Value: editWorkAddress.Pincode}}}}
+		_, err = UserCollection.UpdateOne(ctx, filter, update)
+		if err != nil {
+			c.IndentedJSON(500, "Something went wrong")
+			return
+		}
+		defer cancel()
+		ctx.Done()
+		c.IndentedJSON(200, "succcessfully updated work address")
+	}
 }
 
 func DeleteAddress() gin.HandlerFunc {
