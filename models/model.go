@@ -43,7 +43,7 @@ type Address struct {
 	House      *string            `json:"house_name" bson:"house_name"`
 	Street     *string            `json:"street_name" bson:"street_name"`
 	City       *string            `json:"city_name" bson:"city_name"`
-	Pincode    *string            `json:"pincode" bson:"pincode"`
+	Pincode    *string            `json:"pincode" bson:"pin_code"`
 }
 
 type Order struct {
