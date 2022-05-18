@@ -1,4 +1,4 @@
-package contollers
+package controllers
 
 import (
 	"context"
@@ -93,7 +93,7 @@ func EditHomeAddress() gin.HandlerFunc {
 			{Key: "address.0.pin_code", Value: editaddress.Pincode}}}}
 		_, err = UserCollection.UpdateOne(ctx, filter, update)
 		if err != nil {
-			c.IndentedJSON(500, "Soething went wrong")
+			c.IndentedJSON(500, "Something went wrong")
 			return
 		}
 		defer cancel()

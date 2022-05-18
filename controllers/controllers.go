@@ -1,4 +1,4 @@
-package contollers
+package controllers
 
 import (
 	"context"
@@ -143,7 +143,7 @@ func ProductviewerAdmin() gin.HandlerFunc {
 
 }
 
-func Searchproduct() gin.HandlerFunc {
+func SearchProduct() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var productList []models.Product
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
