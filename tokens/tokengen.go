@@ -1,13 +1,17 @@
 package tokens
 
 import (
+	"context"
 	"log"
 	"os"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/leksyking/go-ecommerce/database"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type SignedDetails struct {
@@ -67,6 +71,26 @@ func ValidateToken(signedtoken string) (claims *SignedDetails, msg string) {
 	}
 	return claims, msg
 }
-func UpdateAllTokens(signedtoken, signedrefreshtoken, uid string) {
+func UpdateAllTokens(signedtoken, signedrefreshtoken, userid string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+
+	var updateObj primitive.D
+
+	updateObj = append(updateObj, bson.E{Key: "token", Value: signedtoken})
+	updateObj = append(updateObj, bson.E{Key: "refresh_token", Value: signedrefreshtoken})
+	updated_at, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+	updateObj = append(updateObj, bson.E{Key: "updatedAt", Value: updated_at})
+
+	upsert := true
+	filter := bson.M{"user_id": userid}
+	opt := options.UpdateOptions{
+		Upsert: &upsert,
+	}
+	_, err := UserCollection.UpdateOne(ctx, filter, bson.D{{Key: "$set", Value: updateObj}}, &opt)
+	defer cancel()
+	if err != nil {
+		log.Panic(err)
+		return
+	}
 
 }
