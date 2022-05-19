@@ -32,7 +32,7 @@ func AddAddress() gin.HandlerFunc {
 			c.IndentedJSON(http.StatusNotAcceptable, err.Error())
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
-
+		//validate address to make sure it doesn't excede 2
 		//Calculate the total number of addresses for the user
 		match_filter := bson.D{{Key: "$match", Value: bson.D{primitive.E{Key: "_id", Value: address}}}}
 		unwind := bson.D{{Key: "$unwind", Value: bson.D{primitive.E{Key: "path", Value: "$address"}}}}

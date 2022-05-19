@@ -39,14 +39,34 @@ func AddProductToCart(ctx context.Context, prodCollection, userCollection *mongo
 		return ErrUserIdIsNotValid
 	}
 	filter := bson.D{primitive.E{Key: "_id", Value: id}}
-	update := bson.D{{Key: "&push", Value: bson.D{primitive.E{Key: "usercart", Value: bson.D{{Key: "$each", Value: productCart}}}}}}
+	update := bson.D{{Key: "$push", Value: bson.D{primitive.E{Key: "usercart", Value: bson.D{{Key: "$each", Value: productCart}}}}}}
 	_, err = userCollection.UpdateOne(ctx, filter, update)
+	ctx.Done()
 	if err != nil {
 		return ErrCantUpdateUser
 	}
 }
 
-func RemoveItemFromCart() {
+func RemoveItemFromCart(ctx context.Context, prodCollection, userCollection *mongo.Collection, productID primitive.ObjectID, userId string) error {
+	//check whether product is valid
+	var product models.ProductUser
+	err := prodCollection.FindOne(ctx, bson.M{"_id": productID}).Decode(&product)
+	if err != nil {
+		log.Println(err)
+		return ErrCantFindProduct
+	}
+	id, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		log.Println(err)
+		return ErrUserIdIsNotValid
+	}
+	filter := bson.D{primitive.E{Key: "_id", Value: id}}
+	update := bson.D{{Key: "$remove", Value: bson.D{primitive.E{Key: "usercart", Value: product}}}}
+	_, err = userCollection.UpdateOne(ctx, filter, update)
+	ctx.Done()
+	if err != nil {
+		return ErrCantUpdateUser
+	}
 
 }
 
