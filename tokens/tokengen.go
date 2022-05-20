@@ -49,7 +49,7 @@ func TokenGenerator(email, firstname, lastname, uid string) (string, string, err
 		log.Panic(err)
 		return "", "", err
 	}
-	return token, refreshToken, err
+	return token, refreshToken, nil
 
 }
 func ValidateToken(signedtoken string) (claims *SignedDetails, msg string) {

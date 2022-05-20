@@ -130,7 +130,7 @@ func Login() gin.HandlerFunc {
 			fmt.Println(msg)
 			return
 		}
-		token, refereshToken, err := tokens.TokenGenerator(*foundUser.Email, *foundUser.First_Name, *foundUser.Last_Name, foundUser.User_ID)
+		token, refereshToken, _ := tokens.TokenGenerator(*foundUser.Email, *foundUser.First_Name, *foundUser.Last_Name, foundUser.User_ID)
 		defer cancel()
 
 		tokens.UpdateAllTokens(token, refereshToken, foundUser.User_ID)
@@ -140,7 +140,23 @@ func Login() gin.HandlerFunc {
 }
 
 func ProductviewerAdmin() gin.HandlerFunc {
-
+	return func(c *gin.Context) {
+		var products models.Product
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+		if err := c.BindJSON(&products); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		products.Product_ID = primitive.NewObjectID()
+		_, anyerr := ProductCollection.InsertOne(ctx, products)
+		if anyerr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create product"})
+			return
+		}
+		defer cancel()
+		c.JSON(http.StatusCreated, "Added successfully ")
+	}
 }
 
 func SearchProduct() gin.HandlerFunc {
