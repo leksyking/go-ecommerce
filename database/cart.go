@@ -69,6 +69,8 @@ func BuyItemFromCart(ctx context.Context, userCollection *mongo.Collection, user
 	//fetch items from cart
 	//find the cart total
 	//create an order with the items
+	//add order to user collectin
+	//add items in the cart to order list
 	// empty up cart
 	id, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
@@ -82,7 +84,7 @@ func BuyItemFromCart(ctx context.Context, userCollection *mongo.Collection, user
 	ordercart.Ordered_At = time.Now()
 	ordercart.Order_Cart = make([]models.ProductUser, 0)
 	ordercart.Payment_Method.COD = true
-
+	//calculate the aggregate of price
 	match := bson.D{primitive.E{Key: "_id", Value: id}}
 	unwind := bson.D{{Key: "$unwind", Value: bson.D{primitive.E{Key: "path", Value: bson.D{{Key: "usercart"}}}}}}
 	grouping := bson.D{{Key: "$group", Value: bson.D{primitive.E{Key: "_id", Value: "$_id"}, {Key: "total", Value: bson.D{primitive.E{Key: "$sum", Value: "$usercart.price"}}}}}}
@@ -105,19 +107,34 @@ func BuyItemFromCart(ctx context.Context, userCollection *mongo.Collection, user
 	}
 
 	ordercart.Price = int(total_price)
-
+	//add orders
 	filter := bson.D{primitive.E{Key: "_id", Value: id}}
 	update := bson.D{{Key: "$push", Value: bson.D{primitive.E{Key: "orders", Value: ordercart}}}}
 	_, err = userCollection.UpdateMany(ctx, filter, update)
 	if err != nil {
 		log.Println(err)
 	}
+	//find user
 	err = userCollection.FindOne(ctx, bson.D{primitive.E{Key: "_id", Value: id}}).Decode(&getcartitems)
 	if err != nil {
 		log.Println(err)
 	}
-	getcartitems.UserCart
-
+	//add usercart to orders
+	filter2 := bson.D{primitive.E{Key: "_id", Value: id}}
+	update2 := bson.M{"$push": bson.M{"orders.$[].order_list": bson.M{"$each": getcartitems.UserCart}}}
+	_, err = userCollection.UpdateOne(ctx, filter2, update2)
+	if err != nil {
+		log.Println(err)
+	}
+	//empty the cart
+	usercart_empty := make([]models.ProductUser, 0)
+	filter3 := bson.D{primitive.E{Key: "_id", Value: id}}
+	update3 := bson.M{"$set": bson.M{"usercart": usercart_empty}}
+	_, err = userCollection.UpdateOne(ctx, filter3, update3)
+	if err != nil {
+		return ErrCantBuyCartItem
+	}
+	return nil
 }
 
 func InstantBuyer(ctx context.Context, prodCollection, userCollection *mongo.Collection, productID primitive.ObjectID, userId string) error {
