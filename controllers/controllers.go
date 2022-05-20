@@ -87,7 +87,7 @@ func Signup() gin.HandlerFunc {
 		user.ID = primitive.NewObjectID()
 		user.User_ID = user.ID.Hex()
 
-		token, refreshToken, err := tokens.TokenGenerator(*user.Email, *user.First_Name, *user.Last_Name, user.User_ID)
+		token, refreshToken, _ := tokens.TokenGenerator(*user.Email, *user.First_Name, *user.Last_Name, user.User_ID)
 		user.Token = &token
 		user.Refresh_Token = &refreshToken
 		user.UserCart = make([]models.ProductUser, 0)
@@ -141,6 +141,7 @@ func Login() gin.HandlerFunc {
 
 func ProductviewerAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		//create a product and add to the database
 		var products models.Product
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()

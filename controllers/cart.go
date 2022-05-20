@@ -167,12 +167,15 @@ func (app *Application) InstantBuy() gin.HandlerFunc {
 		userQueryID := c.Query("userID")
 		if userQueryID == "" {
 			log.Println("User id is empty.")
-			_ = c.AbortWithError(http.StatusBadRequest, errors.New("User id is empty"))
+			_ = c.AbortWithError(http.StatusBadRequest, errors.New("user id is empty"))
 			return
 		}
 
 		productID, err := primitive.ObjectIDFromHex(productQueryID)
-
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err)
+			return
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
